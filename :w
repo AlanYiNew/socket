@@ -30,18 +30,18 @@ class Client{
 };
 
 int main(int argc, char* argv[]){
-    int NUM_THREADS = 200; 
+    int NUM_THREADS = 100; 
     vector<pthread_t> tids;
     tids.reserve(NUM_THREADS);
-    for( int i = 0; i < NUM_THREADS; i++ ){
+    for( int i = 0; i < NUM_THREADS; ++i ){
         int ret = ::pthread_create( &(tids[i]), NULL, run_client, NULL );
         if( ret != 0 ){
             cout << "pthread_create error:error_code=" << ret << endl;
         }
     }
     
-    while (count < NUM_THREADS);
-    cout << "gg" << endl;
+    while (count < 100);
+
     return 0;
 
 }
@@ -49,17 +49,16 @@ int main(int argc, char* argv[]){
 static void *run_client(void * ptr){
     string message("Hello World!");
     for (int j = 0; j < 1000; j++){
-        Client client(8099);
+        Client client = new Client(8099);
         client.init();
         client.establish();
     
         for (int i = 0; i < 10000; i++){
             client.send(message);
         }
-        client.shutdown();
+        delete(client);
     }
     pthread_mutex_lock(&mutex);
-    cout << count << endl;
     count++;
     pthread_mutex_unlock(&mutex);
 }
@@ -97,12 +96,10 @@ int Client::send(string message){
 
 int Client::shutdown(){
     ::shutdown(cli_fd,SHUT_RDWR);
-    ::close(cli_fd);
 }
 
 Client::~Client(){
     ::shutdown(cli_fd,SHUT_RDWR);
-    ::close(cli_fd);
     if (cli_addr != NULL){
         delete(cli_addr);
     }

@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-Wall -Werror -Os -o 
+CFLAGS=-Wall -Werror -lpthread -Os -o 
 
 
 server: main.o server.o
