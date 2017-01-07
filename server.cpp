@@ -82,10 +82,7 @@ int Server::starts(){
         }
 
 #ifdef TEST_H
-        int count = 0;
-        int running = 0;
         int time = 0;
-        int accepts = 0;
         struct timeval start, stop, diff;
 #endif
         while (true){
@@ -110,8 +107,6 @@ int Server::starts(){
 	                perror("clientfd added fails");
 	                ::exit(-1);
                     }
-                    running++;
-                    accepts++;
                     clientfds.push_back(connfd);
                 }   else if (events[i].events & EPOLLIN){
                     int readsize = 0;
@@ -135,11 +130,9 @@ int Server::starts(){
                         }
 
 #ifdef TEST_H 
-                        /** test code **/
-                        running--;
-                        
-                        cout << count << "|" << running <<"|" <<accepts << endl;
-                        if (++count == 100000){
+                        /** test code **/ 
+                        /** teminates signal **/
+                        if (buff[0] == 't'){
                            gettimeofday(&stop, 0);
                            ::timeval_subtract(&diff,&start,&stop);  
                            cout << diff.tv_usec << endl;

@@ -8,7 +8,7 @@
 #include <netinet/in.h>
 #include <pthread.h>
 #include <vector>
-#include <error.h>
+#include <cerrno>
 #define MAXLINE 4096
 using namespace::std;
 static int count = 0;
@@ -30,36 +30,48 @@ class Client{
 };
 
 int main(int argc, char* argv[]){
-    int NUM_THREADS = 200; 
+    int NUM_THREADS = 4; 
     vector<pthread_t> tids;
     tids.reserve(NUM_THREADS);
-    for( int i = 0; i < NUM_THREADS; i++ ){
-        int ret = ::pthread_create( &(tids[i]), NULL, run_client, NULL );
-        if( ret != 0 ){
-            cout << "pthread_create error:error_code=" << ret << endl;
+    
+    try {
+        for( int i = 0; i < NUM_THREADS; i++ ){
+            int ret = ::pthread_create( &(tids[i]), NULL, run_client, NULL );
+            if( ret != 0 ){
+                cout << "pthread_create error:error_code=" << ret << endl;
+            }
         }
+    }   catch (exception& e){
+        cout << e.what() << endl;
     }
     
     while (count < NUM_THREADS);
-    cout << "gg" << endl;
+ 
+    /** make a long enough terminating signal **/
+    Client cliente(8099); 
+    cliente.init();
+    cliente.establish();
+    string endMessage("tttttttttttttttttttttttttttttttttttttt");
+    cliente.send(endMessage);
+    cliente.shutdown();
     return 0;
 
 }
 
 static void *run_client(void * ptr){
-    string message("Hello World!");
+    string message("Hello World!\n");
     for (int j = 0; j < 1000; j++){
         Client client(8099);
         client.init();
-        client.establish();
-    
+       
+        int errt = 0; 
+        while (errt=client.establish());
+        
         for (int i = 0; i < 10000; i++){
             client.send(message);
         }
-        client.shutdown();
     }
     pthread_mutex_lock(&mutex);
-    cout << count << endl;
     count++;
     pthread_mutex_unlock(&mutex);
 }
@@ -73,6 +85,8 @@ int Client::init(){
     /** create a sockaddr_in  **/
     this->cli_addr = new sockaddr_in; 
 
+    if (this->cli_addr == NULL) exit(-1);
+
     /** initialize sockaddr **/
     cli_addr->sin_family = AF_INET;
     cli_addr->sin_port = htons(this->port);
@@ -83,7 +97,7 @@ int Client::init(){
 int Client::establish(){
     cli_fd = socket(AF_INET,SOCK_STREAM,0);
 
-    if (cli_fd == -1) return cli_fd;
+    if (cli_fd <=0) return -1;
 
     int err = connect(cli_fd,(sockaddr*)cli_addr,sizeof(sockaddr));
  
@@ -98,6 +112,7 @@ int Client::send(string message){
 int Client::shutdown(){
     ::shutdown(cli_fd,SHUT_RDWR);
     ::close(cli_fd);
+    
 }
 
 Client::~Client(){
